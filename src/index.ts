@@ -8,7 +8,7 @@
 'use strict';
 
 import {
-  BoxSizer
+  BoxSizer, boxCalc
 } from 'phosphor-boxengine';
 
 import {
@@ -24,6 +24,8 @@ import {
   ResizeMessage, Widget
 } from 'phosphor-widget';
 
+import './index.css';
+
 
 /**
  * `p-GridPanel`: the class name added to GridPanel instances.
@@ -35,6 +37,7 @@ const GRID_PANEL_CLASS = 'p-GridPanel';
 /**
  * A Phosphor layout widget which arranges its children into a 2D grid.
  */
+export
 class GridPanel extends Widget {
   /**
    * The property descriptor for the row specifications.
@@ -42,17 +45,14 @@ class GridPanel extends Widget {
    * This controls the layout of the rows in the grid panel.
    *
    * #### Notes
-   * A frozen shallow copy is maded of the provided array. This means
-   * in-place modifications to the row specs are not allowed. The spec
-   * objects themselves may be updated in-place, but the array can only
-   * be changed wholesale.
+   * In-place modifications to the array is not allowed.
    *
    * **See also:** [[rowSpecs]]
    */
   static rowSpecsProperty = new Property<GridPanel, Spec[]>({
     value: Object.freeze([]),
-    coerce: (owner, value) => Object.freeze(value.slice()),
-    changed: (owner, old, value) => owner._onRowSpecsChanged(old, value),
+    coerce: (owner, value) => Object.freeze(value ? value.slice() : []),
+    changed: (owner, old, value) => owner._onGridSpecsChanged(old, value),
   });
 
   /**
@@ -61,24 +61,23 @@ class GridPanel extends Widget {
    * This controls the layout of the columns in the grid panel.
    *
    * #### Notes
-   * A frozen shallow copy is maded of the provided array. This means
-   * in-place modifications to the column specs are not allowed. The
-   * spec objects themselves may be updated in-place, but the array
-   * can only be changed wholesale.
+   * In-place modifications to the array is not allowed.
    *
    * **See also:** [[columnSpecs]]
    */
   static columnSpecsProperty = new Property<GridPanel, Spec[]>({
     value: Object.freeze([]),
-    coerce: (owner, value) => Object.freeze(value.slice()),
-    changed: (owner, old, value) => owner._onColSpecsChanged(old, value),
+    coerce: (owner, value) => Object.freeze(value ? value.slice() : []),
+    changed: (owner, old, value) => owner._onGridSpecsChanged(old, value),
   });
 
   /**
    * The property descriptor for the grid panel row spacing.
    *
-   * The controls the fixed row spacing between the child widgets,
-   * in pixels. The default value is `8`.
+   * The controls the fixed row spacing between the child widgets.
+   *
+   * #### Notes
+   * The default value is `8`.
    *
    * **See also:** [[rowSpacing]]
    */
@@ -91,8 +90,10 @@ class GridPanel extends Widget {
   /**
    * The property descriptor for the grid panel column spacing.
    *
-   * The controls the fixed column spacing between the child widgets,
-   * in pixels. The default value is `8`.
+   * The controls the fixed column spacing between the child widgets.
+   *
+   * #### Notes
+   * The default value is `8`.
    *
    * **See also:** [[columnSpacing]]
    */
@@ -105,7 +106,8 @@ class GridPanel extends Widget {
   /**
    * The property descriptor for a widget's origin row.
    *
-   * This controls the row index of the widget's origin.
+   * This controls the row index of the widget's origin when
+   * layed out in a grid panel.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `0`.
@@ -117,12 +119,14 @@ class GridPanel extends Widget {
   static rowProperty = new Property<Widget, number>({
     value: 0,
     coerce: (owner, value) => Math.max(0, value | 0),
+    changed: onWidgetChanged,
   });
 
   /**
    * The property descriptor for a widget's origin column.
    *
-   * This controls the column index of the widget's origin.
+   * This controls the column index of the widget's origin when
+   * layed out in a grid panel.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `0`.
@@ -134,12 +138,14 @@ class GridPanel extends Widget {
   static columnProperty = new Property<Widget, number>({
     value: 0,
     coerce: (owner, value) => Math.max(0, value | 0),
+    changed: onWidgetChanged,
   });
 
   /**
    * The property descriptor for a widget's row span.
    *
-   * This controls the number of rows spanned by the widget.
+   * This controls the number of rows spanned by the widget when
+   * layed out in a grid panel.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `1`.
@@ -151,12 +157,14 @@ class GridPanel extends Widget {
   static rowSpanProperty = new Property<Widget, number>({
     value: 1,
     coerce: (owner, value) => Math.max(1, value | 0),
+    changed: onWidgetChanged,
   });
 
   /**
    * The property descriptor for a widget's column span.
    *
-   * This controls the number of columns spanned by the widget.
+   * This controls the number of columns spanned by the widget
+   * when layed out in a grid panel.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `1`.
@@ -168,6 +176,7 @@ class GridPanel extends Widget {
   static columnSpanProperty = new Property<Widget, number>({
     value: 1,
     coerce: (owner, value) => Math.max(1, value | 0),
+    changed: onWidgetChanged,
   });
 
   /**
@@ -294,6 +303,8 @@ class GridPanel extends Widget {
    * Dispose of the resources held by the widget.
    */
   dispose(): void {
+    this._rowStarts.length = 0;
+    this._colStarts.length = 0;
     this._rowSizers.length = 0;
     this._colSizers.length = 0;
     super.dispose();
@@ -383,7 +394,6 @@ class GridPanel extends Widget {
    * A message handler invoked on a `'child-added'` message.
    */
   protected onChildAdded(msg: ChildMessage): void {
-    Property.getChanged(msg.child).connect(this._onPropertyChanged, this);
     this.node.appendChild(msg.child.node);
     if (this.isAttached) sendMessage(msg.child, MSG_AFTER_ATTACH);
     this.update();
@@ -393,7 +403,6 @@ class GridPanel extends Widget {
    * A message handler invoked on a `'child-removed'` message.
    */
   protected onChildRemoved(msg: ChildMessage): void {
-    Property.getChanged(msg.child).disconnect(this._onPropertyChanged, this);
     if (this.isAttached) sendMessage(msg.child, MSG_BEFORE_DETACH);
     this.node.removeChild(msg.child.node);
     msg.child.clearOffsetGeometry();
@@ -462,45 +471,150 @@ class GridPanel extends Widget {
    * Setup the size limits and internal grid panel state.
    */
   private _setupGeometry(): void {
+    // Initialize the size constraints.
+    var minW = 0;
+    var minH = 0;
+    var maxW = Infinity;
+    var maxH = Infinity;
 
+    // Compute the height constraints from the row specs.
+    var rowSpecs = this.rowSpecs;
+    if (rowSpecs.length > 0) {
+      var fixed = this.rowSpacing * (rowSpecs.length - 1);
+      minH = rowSpecs.reduce((s, spec) => s + spec.minSize, 0) + fixed;
+      maxH = rowSpecs.reduce((s, spec) => s + spec.maxSize, 0) + fixed;
+    }
+
+    // Compute the width constraints from the column specs.
+    var colSpecs = this.columnSpecs;
+    if (colSpecs.length > 0) {
+      var fixed = this.columnSpacing * (colSpecs.length - 1);
+      minW = colSpecs.reduce((s, spec) => s + spec.minSize, 0) + fixed;
+      maxW = colSpecs.reduce((s, spec) => s + spec.maxSize, 0) + fixed;
+    }
+
+    // Create the data arrays for the subsequent layout.
+    this._rowStarts = zeros(rowSpecs.length);
+    this._colStarts = zeros(colSpecs.length);
+    this._rowSizers = rowSpecs.map(makeSizer);
+    this._colSizers = colSpecs.map(makeSizer);
+
+    // Add the box sizing to the size constraints.
+    var box = this.boxSizing;
+    minW += box.horizontalSum;
+    minH += box.verticalSum;
+    maxW += box.horizontalSum;
+    maxH += box.verticalSum;
+
+    // Update the panel's size constraints.
+    this.setSizeLimits(minW, minH, maxW, maxH);
+
+    // Notify the parent that it should relayout.
+    if (this.parent) sendMessage(this.parent, MSG_LAYOUT_REQUEST);
+
+    // Update the layout for the child widgets.
+    this.update(true);
   }
 
   /**
    * Layout the children using the given offset width and height.
    */
   private _layoutChildren(offsetWidth: number, offsetHeight: number): void {
+    // Bail early if their are no children to arrange.
+    if (this.childCount === 0) {
+      return;
+    }
 
-  }
+    // Compute the actual layout bounds adjusted for border and padding.
+    var box = this.boxSizing;
+    var top = box.paddingTop;
+    var left = box.paddingLeft;
+    var width = offsetWidth - box.horizontalSum;
+    var height = offsetHeight - box.verticalSum;
 
-  /**
-   * The change handler for the [[rowSpecsProperty]].
-   */
-  private _onRowSpecsChanged(old: Spec[], value: Spec[]): void {
-    // TODO (un)subscribe specs
-    postMessage(this, MSG_LAYOUT_REQUEST);
-  }
+    // If there are no row or column sizers, just stack the children.
+    if (this._rowSizers.length === 0 || this._colSizers.length === 0) {
+      for (var i = 0, n = this.childCount; i < n; ++i) {
+        var widget = this.childAt(i);
+        var limits = widget.sizeLimits;
+        var w = Math.max(limits.minWidth, Math.min(width, limits.maxWidth));
+        var h = Math.max(limits.minHeight, Math.min(height, limits.maxHeight));
+        widget.setOffsetGeometry(left, top, w, h);
+      }
+      return;
+    }
 
-  /**
-   * The change handler for the [[columnSpecsProperty]].
-   */
-  private _onColSpecsChanged(old: Spec[], value: Spec[]): void {
-    // TODO (un)subscribe specs
-    postMessage(this, MSG_LAYOUT_REQUEST);
-  }
+    // Compute the row positions.
+    var rowPos = top;
+    var rowStarts = this._rowStarts;
+    var rowSizers = this._rowSizers;
+    var rowSpacing = this.rowSpacing;
+    boxCalc(rowSizers, height - rowSpacing * (rowSizers.length - 1));
+    for (var i = 0, n = rowSizers.length; i < n; ++i) {
+      rowStarts[i] = rowPos;
+      rowPos += rowSizers[i].size + rowSpacing;
+    }
 
-  /**
-   * The handler for the child property changed signal.
-   */
-  private _onPropertyChanged(sender: Widget, args: IChangedArgs): void {
-    switch (args.property) {
-    case GridPanel.rowProperty:
-    case GridPanel.columnProperty:
-    case GridPanel.rowSpanProperty:
-    case GridPanel.columnSpanProperty:
-      this.update();
+    // Compute the column positions.
+    var colPos = left;
+    var colStarts = this._colStarts;
+    var colSizers = this._colSizers;
+    var colSpacing = this.columnSpacing;
+    boxCalc(colSizers, width - colSpacing * (colSizers.length - 1));
+    for (var i = 0, n = colSizers.length; i < n; ++i) {
+      colStarts[i] = colPos;
+      colPos += colSizers[i].size + colSpacing;
+    }
+
+    // Finally, layout the children.
+    var maxRow = rowSizers.length - 1;
+    var maxCol = colSizers.length - 1;
+    for (var i = 0, n = this.childCount; i < n; ++i) {
+      // Fetch the child widget.
+      var widget = this.childAt(i);
+
+      // Compute the widget top and height.
+      var r1 = Math.max(0, Math.min(GridPanel.getRow(widget), maxRow));
+      var r2 = Math.min(r1 + GridPanel.getRowSpan(widget) - 1, maxRow);
+      var y = rowStarts[r1];
+      var h = rowStarts[r2] + rowSizers[r2].size - y;
+
+      // Compute the widget left and width.
+      var c1 = Math.max(0, Math.min(GridPanel.getColumn(widget), maxCol));
+      var c2 = Math.min(c1 + GridPanel.getColumnSpan(widget) - 1, maxCol);
+      var x = colStarts[c1];
+      var w = colStarts[c2] + colSizers[c2].size - x;
+
+      // Clamp to the limits and update the offset geometry.
+      var limits = widget.sizeLimits;
+      w = Math.max(limits.minWidth, Math.min(w, limits.maxWidth));
+      h = Math.max(limits.minHeight, Math.min(h, limits.maxHeight));
+      widget.setOffsetGeometry(x, y, w, h);
     }
   }
 
+  /**
+   * The change handler for the row and columns specs properties.
+   */
+  private _onGridSpecsChanged(old: Spec[], value: Spec[]): void {
+    for (var i = 0, n = old.length; i < n; ++i) {
+      Property.getChanged(old[i]).disconnect(this._onSpecChanged, this);
+    }
+    for (var i = 0, n = value.length; i < n; ++i) {
+      Property.getChanged(value[i]).connect(this._onSpecChanged, this);
+    }
+    postMessage(this, MSG_LAYOUT_REQUEST);
+  }
+
+  /**
+   * The change handler for a spec property changed signal.
+   */
+  private _onSpecChanged(sender: Spec, args: IChangedArgs): void {
+    postMessage(this, MSG_LAYOUT_REQUEST);
+  }
+
+  private _rowStarts: number[] = [];
+  private _colStarts: number[] = [];
   private _rowSizers: BoxSizer[] = [];
   private _colSizers: BoxSizer[] = [];
 }
@@ -542,7 +656,7 @@ class Spec {
    * The property descriptor for the size basis.
    *
    * This controls the size allocated to the row or column before the
-   * stretch factor, size limits, or surplus/deficit space is taken
+   * stretch factor, size limits, and surplus/deficit space is taken
    * into account.
    *
    * #### Notes
@@ -588,7 +702,7 @@ class Spec {
    * **See also:** [[maxSize]]
    */
   static maxSizeProperty = new Property<Spec, number>({
-    value: 0,
+    value: Infinity,
     coerce: (owner, value) => Math.max(0, value),
   });
 
@@ -613,7 +727,7 @@ class Spec {
   /**
    * Construct a new spec.
    *
-   * @param options - The options object for initializing the spec.
+   * @param options - The options for initializing the spec.
    */
   constructor(options: ISpecOptions = {}) {
     if (options.sizeBasis !== void 0) {
@@ -709,4 +823,38 @@ class Spec {
   set stretch(value: number) {
     Spec.stretchProperty.set(this, value);
   }
+}
+
+
+/**
+ * The changed handler for the attached widget properties.
+ */
+function onWidgetChanged(owner: Widget): void {
+  if (owner.parent instanceof GridPanel) {
+    owner.parent.update();
+  }
+}
+
+
+/**
+ * Create an array filled with zeros.
+ */
+function zeros(n: number): number[] {
+  var arr = new Array<number>(n);
+  for (var i = 0; i < n; ++i) arr[i] = 0;
+  return arr;
+}
+
+
+/**
+ * Create and initialize a box sizer from a spec.
+ */
+function makeSizer(spec: Spec): BoxSizer {
+  var sizer = new BoxSizer();
+  sizer.sizeHint = spec.sizeBasis;
+  sizer.minSize = spec.minSize;
+  sizer.maxSize = spec.maxSize;
+  sizer.stretch = spec.stretch;
+  sizer.maxSize = Math.max(sizer.minSize, sizer.maxSize);
+  return sizer;
 }
