@@ -45,7 +45,7 @@ class GridPanel extends Widget {
    * This controls the layout of the rows in the grid panel.
    *
    * #### Notes
-   * In-place modifications to the array is not allowed.
+   * In-place modifications to the array are not allowed.
    *
    * **See also:** [[rowSpecs]]
    */
@@ -61,7 +61,7 @@ class GridPanel extends Widget {
    * This controls the layout of the columns in the grid panel.
    *
    * #### Notes
-   * In-place modifications to the array is not allowed.
+   * In-place modifications to the array are not allowed.
    *
    * **See also:** [[columnSpecs]]
    */
