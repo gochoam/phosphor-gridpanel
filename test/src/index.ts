@@ -423,6 +423,8 @@ describe('phosphor-gridpanel', () => {
         var panel = new GridPanel();
         panel.rowSpecs = [new Spec({ stretch: 4 })];
         expect(panel.rowSpecs[0].stretch).to.be(4);
+        panel.rowSpecs[0].maxSize = 5;
+        expect(panel.rowSpecs[0].maxSize).to.be(5);
       });
 
       it('should a pure delegate to the rowSpecsProperty', () => {
@@ -684,6 +686,79 @@ describe('phosphor-gridpanel', () => {
       });
 
     });
+
+    describe('example', () => {
+
+      it('should excercise the full API', (done) => {
+        var r1 = new Widget();
+        var g1 = new Widget();
+        var b1 = new Widget();
+        var y1 = new Widget();
+
+        var r2 = new Widget();
+        var g2 = new Widget();
+        var b2 = new Widget();
+        var y2 = new Widget();
+
+        GridPanel.setRow(r1, 0);
+        GridPanel.setColumn(r1, 0);
+
+        GridPanel.setRow(g1, 1);
+        GridPanel.setColumn(g1, 0);
+
+        GridPanel.setRow(b1, 2);
+        GridPanel.setColumn(b1, 0);
+
+        GridPanel.setRow(y1, 0);
+        GridPanel.setColumn(y1, 1);
+        GridPanel.setRowSpan(y1, 2);
+        GridPanel.setColumnSpan(y1, 3);
+
+        GridPanel.setRow(r2, 2);
+        GridPanel.setColumn(r2, 1);
+
+        GridPanel.setRow(g2, 2);
+        GridPanel.setColumn(g2, 2);
+
+        GridPanel.setRow(b2, 0);
+        GridPanel.setColumn(b2, 4);
+        GridPanel.setRowSpan(b2, 3);
+
+        GridPanel.setRow(y2, 2);
+        GridPanel.setColumn(y2, 3);
+
+        var panel = new LogPanel();
+
+        panel.rowSpecs = [
+          new Spec({ minSize: 50, sizeBasis: 300 }),
+          new Spec({ minSize: 50, sizeBasis: 150 }),
+          new Spec({ stretch: 0, sizeBasis: 200, minSize: 50 })
+        ];
+
+        panel.columnSpecs = [
+          new Spec({ stretch: 0, sizeBasis: 200, minSize: 50 }),
+          new Spec({ minSize: 50 }),
+          new Spec({ minSize: 50 }),
+          new Spec({ minSize: 50 }),
+          new Spec({ minSize: 50 })
+        ];
+
+        panel.children = [r1, g1, b1, y1, r2, g2, b2, y2];
+
+        var parent = new Widget();
+        parent.children = [panel];
+
+        attachWidget(parent, document.body);
+
+        expect(panel.messages.indexOf('child-added')).to.not.be(-1);
+        expect(panel.messages.indexOf('after-attach')).to.not.be(-1);
+        requestAnimationFrame(() => {
+          expect(panel.messages.indexOf('layout-request')).to.not.be(-1);
+          done();
+        });
+      });
+
+   });
 
   });
 
