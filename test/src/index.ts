@@ -437,6 +437,79 @@ describe('phosphor-gridpanel', () => {
 
     });
 
+    describe('#columnSpecs', () => {
+
+      it('should get the column specs for the grid panel', () => {
+        var panel = new GridPanel();
+        expect(panel.columnSpecs).to.eql([]);
+      });
+
+      it('should set the column specs for the grid panel', () => {
+        var panel = new GridPanel();
+        panel.columnSpecs = [new Spec({ stretch: 4 })];
+        expect(panel.columnSpecs[0].stretch).to.be(4);
+      });
+
+      it('should a pure delegate to the columnSpecsProperty', () => {
+        var panel = new GridPanel();
+        var spec = new Spec({ maxSize: 3 });
+        GridPanel.columnSpecsProperty.set(panel, [spec]);
+        expect(panel.columnSpecs[0].maxSize).to.be(3);
+        panel.columnSpecs = [new Spec({ maxSize: 4 })];
+        var columnSpecs = GridPanel.columnSpecsProperty.get(panel);
+        expect(columnSpecs[0].maxSize).to.be(4);
+      });
+
+    });
+
+    describe('#rowSpacing', () => {
+
+      it('should get the row spacing for the grid panel', () => {
+        var panel = new GridPanel();
+        expect(panel.rowSpacing).to.be(8);
+      });
+
+      it('should set the row spacing for the grid panel', () => {
+        var panel = new GridPanel();
+        panel.rowSpacing = 4;
+        expect(panel.rowSpacing).to.be(4);
+      });
+
+      it('should a pure delegate to the rowSpacingProperty', () => {
+        var panel = new GridPanel();
+        GridPanel.rowSpacingProperty.set(panel, 4);
+        expect(panel.rowSpacing).to.be(4);
+        panel.rowSpacing = 5;
+        var rowSpacing = GridPanel.rowSpacingProperty.get(panel);
+        expect(rowSpacing).to.be(5);
+      });
+
+    });
+
+    describe('#columnSpacing', () => {
+
+      it('should get the column spacing for the grid panel', () => {
+        var panel = new GridPanel();
+        expect(panel.columnSpacing).to.be(8);
+      });
+
+      it('should set the column spacing for the grid panel', () => {
+        var panel = new GridPanel();
+        panel.columnSpacing = 4;
+        expect(panel.columnSpacing).to.be(4);
+      });
+
+      it('should a pure delegate to the columnSpacingProperty', () => {
+        var panel = new GridPanel();
+        GridPanel.columnSpacingProperty.set(panel, 4);
+        expect(panel.columnSpacing).to.be(4);
+        panel.columnSpacing = 5;
+        var columnSpacing = GridPanel.columnSpacingProperty.get(panel);
+        expect(columnSpacing).to.be(5);
+      });
+
+    });
+
     describe('#onChildAdded()', () => {
 
       it('should be invoked when a child is added', (done) => {
@@ -617,6 +690,175 @@ describe('phosphor-gridpanel', () => {
   describe('Spec', () => {
 
     describe('.sizeBasisProperty', () => {
+
+      it('should be a property descriptor', () => {
+        expect(Spec.sizeBasisProperty instanceof Property).to.be(true);
+      });
+
+      it('should default to `0`', () => {
+        var spec = new Spec({});
+        expect(Spec.sizeBasisProperty.get(spec)).to.be(0);
+      });
+
+    });
+
+    describe('.minSizeProperty', () => {
+
+      it('should be a property descriptor', () => {
+        expect(Spec.minSizeProperty instanceof Property).to.be(true);
+      });
+
+      it('should default to `0`', () => {
+        var spec = new Spec({});
+        expect(Spec.minSizeProperty.get(spec)).to.be(0);
+      });
+
+      it('should be clamped to a lower bound of `0`', () => {
+        var spec = new Spec({ minSize: -1 });
+        expect(Spec.minSizeProperty.get(spec)).to.be(0);
+      });
+
+    });
+
+    describe('.maxSizeProperty', () => {
+
+      it('should be a property descriptor', () => {
+        expect(Spec.maxSizeProperty instanceof Property).to.be(true);
+      });
+
+      it('should default to `Infinity`', () => {
+        var spec = new Spec({});
+        expect(Spec.maxSizeProperty.get(spec)).to.be(Infinity);
+      });
+
+      it('should be clamped to a lower bound of `0`', () => {
+        var spec = new Spec({ maxSize: -1 });
+        expect(Spec.maxSizeProperty.get(spec)).to.be(0);
+      });
+
+    });
+
+    describe('.stretchProperty', () => {
+
+      it('should be a property descriptor', () => {
+        expect(Spec.stretchProperty instanceof Property).to.be(true);
+      });
+
+      it('should default to `1`', () => {
+        var spec = new Spec({});
+        expect(Spec.stretchProperty.get(spec)).to.be(1);
+      });
+
+      it('should be clamped to a lower bound of `0`', () => {
+        var spec = new Spec({ stretch: -1 });
+        expect(Spec.stretchProperty.get(spec)).to.be(0);
+      });
+
+    });
+
+    describe('#constructor()', () => {
+
+      it('should accept ISpecOptions', () => {
+        var spec = new Spec({ sizeBasis: 1, minSize: 1, maxSize: 1,
+                              stretch: 2 });
+        expect(spec instanceof Spec).to.be(true);
+      });
+
+    });
+
+    describe('#sizeBasis', () => {
+
+      it('should get the size basis for the spec', () => {
+        var spec = new Spec();
+        expect(spec.sizeBasis).to.be(0);
+      });
+
+      it('should set the size basis for the spec', () => {
+        var spec = new Spec();
+        spec.sizeBasis = 4;
+        expect(spec.sizeBasis).to.be(4);
+      });
+
+      it('should a pure delegate to the sizeBasisProperty', () => {
+        var spec = new Spec();
+        Spec.sizeBasisProperty.set(spec, 4);
+        expect(spec.sizeBasis).to.be(4);
+        spec.sizeBasis = 5;
+        var sizeBasis = Spec.sizeBasisProperty.get(spec);
+        expect(sizeBasis).to.be(5);
+      });
+
+    });
+
+    describe('#minSize', () => {
+
+      it('should get the min size for the spec', () => {
+        var spec = new Spec();
+        expect(spec.minSize).to.be(0);
+      });
+
+      it('should set the min size for the spec', () => {
+        var spec = new Spec();
+        spec.minSize = 4;
+        expect(spec.minSize).to.be(4);
+      });
+
+      it('should a pure delegate to the minSizeProperty', () => {
+        var spec = new Spec();
+        Spec.minSizeProperty.set(spec, 4);
+        expect(spec.minSize).to.be(4);
+        spec.minSize = 5;
+        var minSize = Spec.minSizeProperty.get(spec);
+        expect(minSize).to.be(5);
+      });
+
+    });
+
+    describe('#maxSize', () => {
+
+      it('should get the max size for the spec', () => {
+        var spec = new Spec();
+        expect(spec.maxSize).to.be(Infinity);
+      });
+
+      it('should set the max size for the spec', () => {
+        var spec = new Spec();
+        spec.maxSize = 4;
+        expect(spec.maxSize).to.be(4);
+      });
+
+      it('should a pure delegate to the maxSizeProperty', () => {
+        var spec = new Spec();
+        Spec.maxSizeProperty.set(spec, 4);
+        expect(spec.maxSize).to.be(4);
+        spec.maxSize = 5;
+        var maxSize = Spec.maxSizeProperty.get(spec);
+        expect(maxSize).to.be(5);
+      });
+
+    });
+
+    describe('#stretch', () => {
+
+      it('should get the stretch factor for the spec', () => {
+        var spec = new Spec();
+        expect(spec.stretch).to.be(1);
+      });
+
+      it('should set the stretch factor for the spec', () => {
+        var spec = new Spec();
+        spec.stretch = 4;
+        expect(spec.stretch).to.be(4);
+      });
+
+      it('should a pure delegate to the stretchProperty', () => {
+        var spec = new Spec();
+        Spec.stretchProperty.set(spec, 4);
+        expect(spec.stretch).to.be(4);
+        spec.stretch = 5;
+        var stretch = Spec.stretchProperty.get(spec);
+        expect(stretch).to.be(5);
+      });
 
     });
 

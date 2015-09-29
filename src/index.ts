@@ -805,7 +805,7 @@ class Spec {
   }
 
   /**
-   * Get the stretch factory for the spec.
+   * Get the stretch factor for the spec.
    *
    * #### Notes
    * This is a pure delegate to the [[stretchProperty]].
@@ -815,7 +815,7 @@ class Spec {
   }
 
   /**
-   * Set the stretch factory for the spec.
+   * Set the stretch factor for the spec.
    *
    * #### Notes
    * This is a pure delegate to the [[stretchProperty]].
