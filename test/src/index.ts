@@ -10,7 +10,7 @@
 import expect = require('expect.js');
 
 import {
-  Message, postMessage, sendMessage
+  Message, sendMessage
 } from 'phosphor-messaging';
 
 import {
@@ -22,7 +22,7 @@ import {
 } from 'phosphor-widget';
 
 import {
-  GRID_PANEL_CLASS, GridPanel, ISpecOptions, Spec
+  GRID_PANEL_CLASS, GridPanel, Spec
 } from '../../lib/index';
 
 
