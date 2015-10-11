@@ -28,17 +28,15 @@ import './index.css';
 
 
 /**
- * `p-GridPanel`: the class name added to GridPanel instances.
- */
-export
-const GRID_PANEL_CLASS = 'p-GridPanel';
-
-
-/**
  * A Phosphor layout widget which arranges its children into a 2D grid.
  */
 export
 class GridPanel extends Widget {
+  /**
+   * The class name added to GridPanel instances.
+   */
+  static p_GridPanel = 'p-GridPanel';
+
   /**
    * The property descriptor for the row specifications.
    *
@@ -296,7 +294,7 @@ class GridPanel extends Widget {
    */
   constructor() {
     super();
-    this.addClass(GRID_PANEL_CLASS);
+    this.addClass(GridPanel.p_GridPanel);
   }
 
   /**

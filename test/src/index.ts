@@ -22,7 +22,7 @@ import {
 } from 'phosphor-widget';
 
 import {
-  GRID_PANEL_CLASS, GridPanel, Spec
+  GridPanel, Spec
 } from '../../lib/index';
 
 
@@ -50,15 +50,15 @@ class LogWidget extends Widget {
 
 describe('phosphor-gridpanel', () => {
 
-  describe('GRID_PANEL_CLASS', () => {
-
-    it('should equal `p-GridPanel`', () => {
-      expect(GRID_PANEL_CLASS).to.be('p-GridPanel');
-    });
-
-  });
-
   describe('GridPanel', () => {
+
+    describe('.p_GridPanel', () => {
+
+      it('should equal `p-GridPanel`', () => {
+        expect(GridPanel.p_GridPanel).to.be('p-GridPanel');
+      });
+
+    });
 
     describe('.rowSpecsProperty', () => {
 
@@ -501,9 +501,9 @@ describe('phosphor-gridpanel', () => {
         expect(panel instanceof GridPanel).to.be(true);
       });
 
-      it('should add `GRID_PANEL_CLASS`', () => {
+      it('should add `p-GridPanel`', () => {
         var panel = new GridPanel();
-        expect(panel.hasClass(GRID_PANEL_CLASS)).to.be(true);
+        expect(panel.hasClass(GridPanel.p_GridPanel)).to.be(true);
       });
 
     });

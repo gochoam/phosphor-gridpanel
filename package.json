@@ -8,7 +8,7 @@
     "phosphor-boxengine": "^0.9.4",
     "phosphor-messaging": "^1.0.5",
     "phosphor-properties": "^1.2.0",
-    "phosphor-widget": "^0.9.10"
+    "phosphor-widget": "^0.9.11"
   },
   "devDependencies": {
     "browserify": "^11.0.1",
