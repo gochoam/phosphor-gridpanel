@@ -12,19 +12,28 @@ import {
 } from 'phosphor-boxengine';
 
 import {
+  IBoxSizing, ISizeLimits, boxSizing, sizeLimits
+} from 'phosphor-domutil';
+
+import {
   Message, postMessage, sendMessage
 } from 'phosphor-messaging';
 
 import {
-  IChangedArgs, Property
+  IPropertyChangedArgs, Property
 } from 'phosphor-properties';
 
 import {
-  ChildMessage, MSG_AFTER_ATTACH, MSG_BEFORE_DETACH, MSG_LAYOUT_REQUEST,
-  ResizeMessage, Widget
+  ChildMessage, ResizeMessage, Widget
 } from 'phosphor-widget';
 
 import './index.css';
+
+
+/**
+ * The class name added to GridPanel instances.
+ */
+const GRID_PANEL_CLASS = 'p-GridPanel';
 
 
 /**
@@ -32,11 +41,6 @@ import './index.css';
  */
 export
 class GridPanel extends Widget {
-  /**
-   * The class name added to GridPanel instances.
-   */
-  static p_GridPanel = 'p-GridPanel';
-
   /**
    * The property descriptor for the row specifications.
    *
@@ -82,7 +86,7 @@ class GridPanel extends Widget {
   static rowSpacingProperty = new Property<GridPanel, number>({
     value: 8,
     coerce: (owner, value) => Math.max(0, value | 0),
-    changed: owner => postMessage(owner, MSG_LAYOUT_REQUEST),
+    changed: owner => postMessage(owner, Widget.MsgLayoutRequest),
   });
 
   /**
@@ -98,7 +102,7 @@ class GridPanel extends Widget {
   static columnSpacingProperty = new Property<GridPanel, number>({
     value: 8,
     coerce: (owner, value) => Math.max(0, value | 0),
-    changed: owner => postMessage(owner, MSG_LAYOUT_REQUEST),
+    changed: owner => postMessage(owner, Widget.MsgLayoutRequest),
   });
 
   /**
@@ -294,7 +298,7 @@ class GridPanel extends Widget {
    */
   constructor() {
     super();
-    this.addClass(GridPanel.p_GridPanel);
+    this.addClass(GRID_PANEL_CLASS);
   }
 
   /**
@@ -393,7 +397,7 @@ class GridPanel extends Widget {
    */
   protected onChildAdded(msg: ChildMessage): void {
     this.node.appendChild(msg.child.node);
-    if (this.isAttached) sendMessage(msg.child, MSG_AFTER_ATTACH);
+    if (this.isAttached) sendMessage(msg.child, Widget.MsgAfterAttach);
     this.update();
   }
 
@@ -401,9 +405,9 @@ class GridPanel extends Widget {
    * A message handler invoked on a `'child-removed'` message.
    */
   protected onChildRemoved(msg: ChildMessage): void {
-    if (this.isAttached) sendMessage(msg.child, MSG_BEFORE_DETACH);
+    if (this.isAttached) sendMessage(msg.child, Widget.MsgBeforeDetach);
     this.node.removeChild(msg.child.node);
-    msg.child.clearOffsetGeometry();
+    resetGeometry(msg.child);
   }
 
   /**
@@ -422,7 +426,7 @@ class GridPanel extends Widget {
    * A message handler invoked on an `'after-attach'` message.
    */
   protected onAfterAttach(msg: Message): void {
-    postMessage(this, MSG_LAYOUT_REQUEST);
+    postMessage(this, Widget.MsgLayoutRequest);
   }
 
   /**
@@ -437,12 +441,9 @@ class GridPanel extends Widget {
    */
   protected onResize(msg: ResizeMessage): void {
     if (this.isVisible) {
-      if (msg.width < 0 || msg.height < 0) {
-        var rect = this.offsetRect;
-        this._layoutChildren(rect.width, rect.height);
-      } else {
-        this._layoutChildren(msg.width, msg.height);
-      }
+      let width = msg.width < 0 ? this.node.offsetWidth : msg.width;
+      let height = msg.height < 0 ? this.node.offsetHeight : msg.height;
+      this._layoutChildren(width, height);
     }
   }
 
@@ -451,8 +452,7 @@ class GridPanel extends Widget {
    */
   protected onUpdateRequest(msg: Message): void {
     if (this.isVisible) {
-      var rect = this.offsetRect;
-      this._layoutChildren(rect.width, rect.height);
+      this._layoutChildren(this.node.offsetWidth, this.node.offsetHeight);
     }
   }
 
@@ -470,25 +470,31 @@ class GridPanel extends Widget {
    */
   private _setupGeometry(): void {
     // Initialize the size constraints.
-    var minW = 0;
-    var minH = 0;
-    var maxW = Infinity;
-    var maxH = Infinity;
+    let minW = 0;
+    let minH = 0;
+    let maxW = Infinity;
+    let maxH = Infinity;
 
     // Compute the height constraints from the row specs.
-    var rowSpecs = this.rowSpecs;
+    let rowSpecs = this.rowSpecs;
     if (rowSpecs.length > 0) {
-      var fixed = this.rowSpacing * (rowSpecs.length - 1);
+      let fixed = this.rowSpacing * (rowSpecs.length - 1);
       minH = rowSpecs.reduce((s, spec) => s + spec.minSize, 0) + fixed;
       maxH = rowSpecs.reduce((s, spec) => s + spec.maxSize, 0) + fixed;
     }
 
     // Compute the width constraints from the column specs.
-    var colSpecs = this.columnSpecs;
+    let colSpecs = this.columnSpecs;
     if (colSpecs.length > 0) {
-      var fixed = this.columnSpacing * (colSpecs.length - 1);
+      let fixed = this.columnSpacing * (colSpecs.length - 1);
       minW = colSpecs.reduce((s, spec) => s + spec.minSize, 0) + fixed;
       maxW = colSpecs.reduce((s, spec) => s + spec.maxSize, 0) + fixed;
+    }
+
+    // Refresh the cached size limits for the children.
+    for (let i = 0, n = this.childCount; i < n; ++i) {
+      let widget = this.childAt(i);
+      setLimits(widget, sizeLimits(widget.node));
     }
 
     // Create the data arrays for the subsequent layout.
@@ -497,18 +503,22 @@ class GridPanel extends Widget {
     this._rowSizers = rowSpecs.map(makeSizer);
     this._colSizers = colSpecs.map(makeSizer);
 
-    // Add the box sizing to the size constraints.
-    var box = this.boxSizing;
-    minW += box.horizontalSum;
-    minH += box.verticalSum;
-    maxW += box.horizontalSum;
-    maxH += box.verticalSum;
+    // Update the box sizing and add it to the size constraints.
+    this._box = boxSizing(this.node);
+    minW += this._box.horizontalSum;
+    minH += this._box.verticalSum;
+    maxW += this._box.horizontalSum;
+    maxH += this._box.verticalSum;
 
     // Update the panel's size constraints.
-    this.setSizeLimits(minW, minH, maxW, maxH);
+    let style = this.node.style;
+    style.minWidth = minW + 'px';
+    style.minHeight = minH + 'px';
+    style.maxWidth = maxW === Infinity ? 'none' : maxW + 'px';
+    style.maxHeight = maxH === Infinity ? 'none' : maxH + 'px';
 
     // Notify the parent that it should relayout.
-    if (this.parent) sendMessage(this.parent, MSG_LAYOUT_REQUEST);
+    if (this.parent) sendMessage(this.parent, Widget.MsgLayoutRequest);
 
     // Update the layout for the child widgets.
     this.update(true);
@@ -523,71 +533,73 @@ class GridPanel extends Widget {
       return;
     }
 
+    // Ensure the box sizing is created.
+    let box = this._box || (this._box = boxSizing(this.node));
+
     // Compute the actual layout bounds adjusted for border and padding.
-    var box = this.boxSizing;
-    var top = box.paddingTop;
-    var left = box.paddingLeft;
-    var width = offsetWidth - box.horizontalSum;
-    var height = offsetHeight - box.verticalSum;
+    let top = box.paddingTop;
+    let left = box.paddingLeft;
+    let width = offsetWidth - box.horizontalSum;
+    let height = offsetHeight - box.verticalSum;
 
     // If there are no row or column sizers, just stack the children.
     if (this._rowSizers.length === 0 || this._colSizers.length === 0) {
-      for (var i = 0, n = this.childCount; i < n; ++i) {
-        var widget = this.childAt(i);
-        var limits = widget.sizeLimits;
-        var w = Math.max(limits.minWidth, Math.min(width, limits.maxWidth));
-        var h = Math.max(limits.minHeight, Math.min(height, limits.maxHeight));
-        widget.setOffsetGeometry(left, top, w, h);
+      for (let i = 0, n = this.childCount; i < n; ++i) {
+        let widget = this.childAt(i);
+        let limits = getLimits(widget);
+        let w = Math.max(limits.minWidth, Math.min(width, limits.maxWidth));
+        let h = Math.max(limits.minHeight, Math.min(height, limits.maxHeight));
+        setGeometry(widget, left, top, w, h);
       }
       return;
     }
 
     // Compute the row positions.
-    var rowPos = top;
-    var rowStarts = this._rowStarts;
-    var rowSizers = this._rowSizers;
-    var rowSpacing = this.rowSpacing;
+    let rowPos = top;
+    let rowStarts = this._rowStarts;
+    let rowSizers = this._rowSizers;
+    let rowSpacing = this.rowSpacing;
     boxCalc(rowSizers, height - rowSpacing * (rowSizers.length - 1));
-    for (var i = 0, n = rowSizers.length; i < n; ++i) {
+    for (let i = 0, n = rowSizers.length; i < n; ++i) {
       rowStarts[i] = rowPos;
       rowPos += rowSizers[i].size + rowSpacing;
     }
 
     // Compute the column positions.
-    var colPos = left;
-    var colStarts = this._colStarts;
-    var colSizers = this._colSizers;
-    var colSpacing = this.columnSpacing;
+    let colPos = left;
+    let colStarts = this._colStarts;
+    let colSizers = this._colSizers;
+    let colSpacing = this.columnSpacing;
     boxCalc(colSizers, width - colSpacing * (colSizers.length - 1));
-    for (var i = 0, n = colSizers.length; i < n; ++i) {
+    for (let i = 0, n = colSizers.length; i < n; ++i) {
       colStarts[i] = colPos;
       colPos += colSizers[i].size + colSpacing;
     }
 
     // Finally, layout the children.
-    var maxRow = rowSizers.length - 1;
-    var maxCol = colSizers.length - 1;
-    for (var i = 0, n = this.childCount; i < n; ++i) {
+    let maxRow = rowSizers.length - 1;
+    let maxCol = colSizers.length - 1;
+    for (let i = 0, n = this.childCount; i < n; ++i) {
       // Fetch the child widget.
-      var widget = this.childAt(i);
+      let widget = this.childAt(i);
 
       // Compute the widget top and height.
-      var r1 = Math.max(0, Math.min(GridPanel.getRow(widget), maxRow));
-      var r2 = Math.min(r1 + GridPanel.getRowSpan(widget) - 1, maxRow);
-      var y = rowStarts[r1];
-      var h = rowStarts[r2] + rowSizers[r2].size - y;
+      let r1 = Math.max(0, Math.min(GridPanel.getRow(widget), maxRow));
+      let r2 = Math.min(r1 + GridPanel.getRowSpan(widget) - 1, maxRow);
+      let y = rowStarts[r1];
+      let h = rowStarts[r2] + rowSizers[r2].size - y;
 
       // Compute the widget left and width.
-      var c1 = Math.max(0, Math.min(GridPanel.getColumn(widget), maxCol));
-      var c2 = Math.min(c1 + GridPanel.getColumnSpan(widget) - 1, maxCol);
-      var x = colStarts[c1];
-      var w = colStarts[c2] + colSizers[c2].size - x;
+      let c1 = Math.max(0, Math.min(GridPanel.getColumn(widget), maxCol));
+      let c2 = Math.min(c1 + GridPanel.getColumnSpan(widget) - 1, maxCol);
+      let x = colStarts[c1];
+      let w = colStarts[c2] + colSizers[c2].size - x;
 
       // Clamp to the limits and update the offset geometry.
-      var limits = widget.sizeLimits;
+      let limits = getLimits(widget);
       w = Math.max(limits.minWidth, Math.min(w, limits.maxWidth));
       h = Math.max(limits.minHeight, Math.min(h, limits.maxHeight));
-      widget.setOffsetGeometry(x, y, w, h);
+      setGeometry(widget, x, y, w, h);
     }
   }
 
@@ -595,22 +607,23 @@ class GridPanel extends Widget {
    * The change handler for the row and columns specs properties.
    */
   private _onGridSpecsChanged(old: Spec[], value: Spec[]): void {
-    for (var i = 0, n = old.length; i < n; ++i) {
+    for (let i = 0, n = old.length; i < n; ++i) {
       Property.getChanged(old[i]).disconnect(this._onSpecChanged, this);
     }
-    for (var i = 0, n = value.length; i < n; ++i) {
+    for (let i = 0, n = value.length; i < n; ++i) {
       Property.getChanged(value[i]).connect(this._onSpecChanged, this);
     }
-    postMessage(this, MSG_LAYOUT_REQUEST);
+    postMessage(this, Widget.MsgLayoutRequest);
   }
 
   /**
    * The change handler for a spec property changed signal.
    */
-  private _onSpecChanged(sender: Spec, args: IChangedArgs): void {
-    postMessage(this, MSG_LAYOUT_REQUEST);
+  private _onSpecChanged(spec: Spec, args: IPropertyChangedArgs<Spec, any>): void {
+    postMessage(this, Widget.MsgLayoutRequest);
   }
 
+  private _box: IBoxSizing = null;
   private _rowStarts: number[] = [];
   private _colStarts: number[] = [];
   private _rowSizers: BoxSizer[] = [];
@@ -823,6 +836,130 @@ class Spec {
   }
 }
 
+/**
+ * An object which represents an offset rect.
+ */
+interface IRect {
+  /**
+   * The offset top edge, in pixels.
+   */
+  top: number;
+
+  /**
+   * The offset left edge, in pixels.
+   */
+  left: number;
+
+  /**
+   * The offset width, in pixels.
+   */
+  width: number;
+
+  /**
+   * The offset height, in pixels.
+   */
+  height: number;
+}
+
+
+/**
+ * A private attached property which stores a widget offset rect.
+ */
+let rectProperty = new Property<Widget, IRect>({
+  create: createRect,
+});
+
+
+/**
+ * A private attached property which stores a widget's size limits.
+ */
+let limitsProperty = new Property<Widget, ISizeLimits>({
+  silent: true,
+  create: owner => sizeLimits(owner.node),
+});
+
+
+/**
+ * Create a new offset rect filled with NaNs.
+ */
+function createRect(): IRect {
+  return { top: NaN, left: NaN, width: NaN, height: NaN };
+}
+
+
+/**
+ * Get the offset rect for a widget.
+ */
+function getRect(widget: Widget): IRect {
+  return rectProperty.get(widget);
+}
+
+
+/**
+ * Get the cached size limits for a widget.
+ */
+function getLimits(widget: Widget): ISizeLimits {
+  return limitsProperty.get(widget);
+}
+
+
+/**
+ * Set the cached size limits for a widget.
+ */
+function setLimits(widget: Widget, value: ISizeLimits): void {
+  return limitsProperty.set(widget, value);
+}
+
+
+/**
+ * Set the offset geometry for the given widget.
+ *
+ * A resize message will be dispatched to the widget if appropriate.
+ */
+function setGeometry(widget: Widget, left: number, top: number, width: number, height: number): void {
+  let resized = false;
+  let rect = getRect(widget);
+  let style = widget.node.style;
+  if (rect.top !== top) {
+    rect.top = top;
+    style.top = top + 'px';
+  }
+  if (rect.left !== left) {
+    rect.left = left;
+    style.left = left + 'px';
+  }
+  if (rect.width !== width) {
+    resized = true;
+    rect.width = width;
+    style.width = width + 'px';
+  }
+  if (rect.height !== height) {
+    resized = true;
+    rect.height = height;
+    style.height = height + 'px';
+  }
+  if (resized) {
+    sendMessage(widget, new ResizeMessage(width, height));
+  }
+}
+
+
+/**
+ * Reset the inline geometry and rect cache for the given widget
+ */
+function resetGeometry(widget: Widget): void {
+  let rect = getRect(widget);
+  let style = widget.node.style;
+  rect.top = NaN;
+  rect.left = NaN;
+  rect.width = NaN;
+  rect.height = NaN;
+  style.top = '';
+  style.left = '';
+  style.width = '';
+  style.height = '';
+}
+
 
 /**
  * The changed handler for the attached widget properties.
@@ -838,8 +975,8 @@ function onWidgetChanged(owner: Widget): void {
  * Create an array filled with zeros.
  */
 function zeros(n: number): number[] {
-  var arr = new Array<number>(n);
-  for (var i = 0; i < n; ++i) arr[i] = 0;
+  let arr = new Array<number>(n);
+  for (let i = 0; i < n; ++i) arr[i] = 0;
   return arr;
 }
 
@@ -848,7 +985,7 @@ function zeros(n: number): number[] {
  * Create and initialize a box sizer from a spec.
  */
 function makeSizer(spec: Spec): BoxSizer {
-  var sizer = new BoxSizer();
+  let sizer = new BoxSizer();
   sizer.sizeHint = spec.sizeBasis;
   sizer.minSize = spec.minSize;
   sizer.maxSize = spec.maxSize;

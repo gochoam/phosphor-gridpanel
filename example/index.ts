@@ -8,7 +8,7 @@
 'use-strict';
 
 import {
-  Widget, attachWidget
+  Widget
 } from 'phosphor-widget';
 
 import {
@@ -19,7 +19,7 @@ import './index.css';
 
 
 function createContent(name: string): Widget {
-  var widget = new Widget();
+  let widget = new Widget();
   widget.addClass('content');
   widget.addClass(name);
   return widget;
@@ -27,15 +27,15 @@ function createContent(name: string): Widget {
 
 
 function main(): void {
-  var r1 = createContent('red');
-  var g1 = createContent('green');
-  var b1 = createContent('blue');
-  var y1 = createContent('yellow');
+  let r1 = createContent('red');
+  let g1 = createContent('green');
+  let b1 = createContent('blue');
+  let y1 = createContent('yellow');
 
-  var r2 = createContent('red');
-  var g2 = createContent('green');
-  var b2 = createContent('blue');
-  var y2 = createContent('yellow');
+  let r2 = createContent('red');
+  let g2 = createContent('green');
+  let b2 = createContent('blue');
+  let y2 = createContent('yellow');
 
   GridPanel.setRow(r1, 0);
   GridPanel.setColumn(r1, 0);
@@ -64,7 +64,7 @@ function main(): void {
   GridPanel.setRow(y2, 2);
   GridPanel.setColumn(y2, 3);
 
-  var panel = new GridPanel();
+  let panel = new GridPanel();
   panel.id = 'main';
 
   panel.rowSpecs = [
@@ -83,7 +83,7 @@ function main(): void {
 
   panel.children = [r1, g1, b1, y1, r2, g2, b2, y2];
 
-  attachWidget(panel, document.body);
+  Widget.attach(panel, document.body);
 
   window.onresize = () => panel.update();
 }
