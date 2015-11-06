@@ -4,7 +4,7 @@ phosphor-gridpanel
 [![Build Status](https://travis-ci.org/phosphorjs/phosphor-gridpanel.svg)](https://travis-ci.org/phosphorjs/phosphor-gridpanel?branch=master)
 [![Coverage Status](https://coveralls.io/repos/phosphorjs/phosphor-gridpanel/badge.svg?branch=master&service=github)](https://coveralls.io/github/phosphorjs/phosphor-gridpanel?branch=master)
 
-A Phosphor layout widget which arranges its children into a 2D grid.
+A Phosphor layout panel which arranges its children into a 2D grid.
 
 [API Docs](http://phosphorjs.github.io/phosphor-gridpanel/api/)
 
