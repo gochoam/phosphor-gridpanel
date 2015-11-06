@@ -20,11 +20,11 @@ import {
 } from 'phosphor-messaging';
 
 import {
-  IPropertyChangedArgs, Property
+  IChangedArgs, Property
 } from 'phosphor-properties';
 
 import {
-  ChildMessage, ResizeMessage, Widget
+  ChildMessage, Panel, ResizeMessage, Widget
 } from 'phosphor-widget';
 
 import './index.css';
@@ -37,10 +37,10 @@ const GRID_PANEL_CLASS = 'p-GridPanel';
 
 
 /**
- * A Phosphor layout widget which arranges its children into a 2D grid.
+ * A panel which arranges its children into a 2D grid.
  */
 export
-class GridPanel extends Widget {
+class GridPanel extends Panel {
   /**
    * The property descriptor for the row specifications.
    *
