@@ -24,6 +24,10 @@ import {
 } from 'phosphor-properties';
 
 import {
+  ISignal, Signal
+} from 'phosphor-signaling';
+
+import {
   ChildMessage, Panel, ResizeMessage, Widget
 } from 'phosphor-widget';
 
@@ -47,14 +51,17 @@ class GridPanel extends Panel {
    * This controls the layout of the rows in the grid panel.
    *
    * #### Notes
-   * In-place modifications to the array are not allowed.
+   * This property creates a frozen shallow copy of the assigned specs
+   * array. This means that the specs can only be changed in bulk and
+   * that in-place modifications to the array are not allowed.
    *
    * **See also:** [[rowSpecs]]
    */
   static rowSpecsProperty = new Property<GridPanel, Spec[]>({
+    name: 'rowSpecs',
     value: Object.freeze([]),
     coerce: (owner, value) => Object.freeze(value ? value.slice() : []),
-    changed: (owner, old, value) => owner._onGridSpecsChanged(old, value),
+    changed: (owner, old, value) => { owner._onRowSpecsChanged(old, value); },
   });
 
   /**
@@ -63,14 +70,17 @@ class GridPanel extends Panel {
    * This controls the layout of the columns in the grid panel.
    *
    * #### Notes
-   * In-place modifications to the array are not allowed.
+   * This property creates a frozen shallow copy of the assigned specs
+   * array. This means that the specs can only be changed in bulk and
+   * that in-place modifications to the array are not allowed.
    *
    * **See also:** [[columnSpecs]]
    */
   static columnSpecsProperty = new Property<GridPanel, Spec[]>({
+    name: 'columnSpecs',
     value: Object.freeze([]),
     coerce: (owner, value) => Object.freeze(value ? value.slice() : []),
-    changed: (owner, old, value) => owner._onGridSpecsChanged(old, value),
+    changed: (owner, old, value) => { owner._onColSpecsChanged(old, value); },
   });
 
   /**
@@ -84,9 +94,10 @@ class GridPanel extends Panel {
    * **See also:** [[rowSpacing]]
    */
   static rowSpacingProperty = new Property<GridPanel, number>({
+    name: 'rowSpacing',
     value: 8,
     coerce: (owner, value) => Math.max(0, value | 0),
-    changed: owner => postMessage(owner, Widget.MsgLayoutRequest),
+    changed: owner => { postMessage(owner, Panel.MsgLayoutRequest); },
   });
 
   /**
@@ -100,16 +111,14 @@ class GridPanel extends Panel {
    * **See also:** [[columnSpacing]]
    */
   static columnSpacingProperty = new Property<GridPanel, number>({
+    name: 'columnSpacing',
     value: 8,
     coerce: (owner, value) => Math.max(0, value | 0),
-    changed: owner => postMessage(owner, Widget.MsgLayoutRequest),
+    changed: owner => { postMessage(owner, Panel.MsgLayoutRequest); },
   });
 
   /**
-   * The property descriptor for a widget's origin row.
-   *
-   * This controls the row index of the widget's origin when
-   * layed out in a grid panel.
+   * The property descriptor for a widget's grid row index.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `0`.
@@ -119,16 +128,14 @@ class GridPanel extends Panel {
    * **See also:** [[getRow]], [[setRow]]
    */
   static rowProperty = new Property<Widget, number>({
+    name: 'row',
     value: 0,
     coerce: (owner, value) => Math.max(0, value | 0),
-    changed: onWidgetChanged,
+    changed: onChildPropertyChanged,
   });
 
   /**
-   * The property descriptor for a widget's origin column.
-   *
-   * This controls the column index of the widget's origin when
-   * layed out in a grid panel.
+   * The property descriptor for a widget's grid column index.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `0`.
@@ -138,16 +145,14 @@ class GridPanel extends Panel {
    * **See also:** [[getColumn]], [[setColumn]]
    */
   static columnProperty = new Property<Widget, number>({
+    name: 'column',
     value: 0,
     coerce: (owner, value) => Math.max(0, value | 0),
-    changed: onWidgetChanged,
+    changed: onChildPropertyChanged,
   });
 
   /**
-   * The property descriptor for a widget's row span.
-   *
-   * This controls the number of rows spanned by the widget when
-   * layed out in a grid panel.
+   * The property descriptor for a widget's grid row span.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `1`.
@@ -157,16 +162,14 @@ class GridPanel extends Panel {
    * **See also:** [[getRowSpan]], [[setRowSpan]]
    */
   static rowSpanProperty = new Property<Widget, number>({
+    name: 'rowSpan',
     value: 1,
     coerce: (owner, value) => Math.max(1, value | 0),
-    changed: onWidgetChanged,
+    changed: onChildPropertyChanged,
   });
 
   /**
-   * The property descriptor for a widget's column span.
-   *
-   * This controls the number of columns spanned by the widget
-   * when layed out in a grid panel.
+   * The property descriptor for a widget's grid column span.
    *
    * #### Notes
    * This value is an integer clamped to a lower bound of `1`.
@@ -176,17 +179,18 @@ class GridPanel extends Panel {
    * **See also:** [[getColumnSpan]], [[setColumnSpan]]
    */
   static columnSpanProperty = new Property<Widget, number>({
+    name: 'columnSpan',
     value: 1,
     coerce: (owner, value) => Math.max(1, value | 0),
-    changed: onWidgetChanged,
+    changed: onChildPropertyChanged,
   });
 
   /**
-   * Get the origin row index for the given widget.
+   * Get the grid row index for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @returns The row index of the widget origin.
+   * @returns The grid row index of the widget.
    *
    * #### Notes
    * This is a pure delegate to the [[rowProperty]].
@@ -196,11 +200,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Set the origin row index for the given widget.
+   * Set the grid row index for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @param value - The value for the origin row index.
+   * @param value - The value for the grid row index.
    *
    * #### Notes
    * This is a pure delegate to the [[rowProperty]].
@@ -210,11 +214,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Get the origin column index for the given widget.
+   * Get the grid column index for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @returns The column index of the widget origin.
+   * @returns The grid column index of the widget.
    *
    * #### Notes
    * This is a pure delegate to the [[columnProperty]].
@@ -224,11 +228,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Set the origin column index for the given widget.
+   * Set the grid column index for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @param value - The value for the origin column index.
+   * @param value - The value for the grid column index.
    *
    * #### Notes
    * This is a pure delegate to the [[columnProperty]].
@@ -238,11 +242,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Get the row span for the given widget.
+   * Get the grid row span for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @returns The row span of the widget.
+   * @returns The grid row span of the widget.
    *
    * #### Notes
    * This is a pure delegate to the [[rowSpanProperty]].
@@ -252,11 +256,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Set the row span for the given widget.
+   * Set the grid row span for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @param value - The row span for the widget.
+   * @param value - The grid row span for the widget.
    *
    * #### Notes
    * This is a pure delegate to the [[rowSpanProperty]].
@@ -266,11 +270,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Get the column span for the given widget.
+   * Get the grid column span for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @returns The column span of the widget.
+   * @returns The grid column span of the widget.
    *
    * #### Notes
    * This is a pure delegate to the [[columnSpanProperty]].
@@ -280,11 +284,11 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Set the column span for the given widget.
+   * Set the grid column span for the given widget.
    *
    * @param widget - The widget of interest.
    *
-   * @param value - The column span for the widget.
+   * @param value - The grid column span for the widget.
    *
    * #### Notes
    * This is a pure delegate to the [[columnSpanProperty]].
@@ -398,8 +402,13 @@ class GridPanel extends Panel {
   protected onChildAdded(msg: ChildMessage): void {
     this.node.appendChild(msg.child.node);
     if (this.isAttached) sendMessage(msg.child, Widget.MsgAfterAttach);
-    this.update();
+    postMessage(this, Widget.MsgUpdateRequest);
   }
+
+  /**
+   * A message handler invoked on a `'child-moved'` message.
+   */
+  protected onChildMoved(msg: ChildMessage): void { /* no-op */ }
 
   /**
    * A message handler invoked on a `'child-removed'` message.
@@ -411,29 +420,26 @@ class GridPanel extends Panel {
   }
 
   /**
-   * A message handler invoked on a `'child-moved'` message.
-   */
-  protected onChildMoved(msg: ChildMessage): void { /* no-op */ }
-
-  /**
    * A message handler invoked on an `'after-show'` message.
    */
   protected onAfterShow(msg: Message): void {
-    this.update(true);
+    super.onAfterShow(msg);
+    sendMessage(this, Widget.MsgUpdateRequest);
   }
 
   /**
    * A message handler invoked on an `'after-attach'` message.
    */
   protected onAfterAttach(msg: Message): void {
-    postMessage(this, Widget.MsgLayoutRequest);
+    super.onAfterAttach(msg);
+    postMessage(this, Panel.MsgLayoutRequest);
   }
 
   /**
    * A message handler invoked on a `'child-shown'` message.
    */
   protected onChildShown(msg: ChildMessage): void {
-    this.update();
+    postMessage(this, Widget.MsgUpdateRequest);
   }
 
   /**
@@ -466,7 +472,7 @@ class GridPanel extends Panel {
   }
 
   /**
-   * Setup the size limits and internal grid panel state.
+   * Setup the size constraints and internal state of the grid panel.
    */
   private _setupGeometry(): void {
     // Initialize the size constraints.
@@ -492,8 +498,9 @@ class GridPanel extends Panel {
     }
 
     // Refresh the cached size limits for the children.
-    for (let i = 0, n = this.childCount; i < n; ++i) {
-      let widget = this.childAt(i);
+    let children = this.children;
+    for (let i = 0, n = children.length; i < n; ++i) {
+      let widget = children.get(i);
       setLimits(widget, sizeLimits(widget.node));
     }
 
@@ -518,10 +525,10 @@ class GridPanel extends Panel {
     style.maxHeight = maxH === Infinity ? 'none' : maxH + 'px';
 
     // Notify the parent that it should relayout.
-    if (this.parent) sendMessage(this.parent, Widget.MsgLayoutRequest);
+    if (this.parent) sendMessage(this.parent, Panel.MsgLayoutRequest);
 
     // Update the layout for the child widgets.
-    this.update(true);
+    sendMessage(this, Widget.MsgUpdateRequest);
   }
 
   /**
@@ -529,7 +536,8 @@ class GridPanel extends Panel {
    */
   private _layoutChildren(offsetWidth: number, offsetHeight: number): void {
     // Bail early if their are no children to arrange.
-    if (this.childCount === 0) {
+    let children = this.children;
+    if (children.length === 0) {
       return;
     }
 
@@ -544,8 +552,8 @@ class GridPanel extends Panel {
 
     // If there are no row or column sizers, just stack the children.
     if (this._rowSizers.length === 0 || this._colSizers.length === 0) {
-      for (let i = 0, n = this.childCount; i < n; ++i) {
-        let widget = this.childAt(i);
+      for (let i = 0, n = children.length; i < n; ++i) {
+        let widget = children.get(i);
         let limits = getLimits(widget);
         let w = Math.max(limits.minWidth, Math.min(width, limits.maxWidth));
         let h = Math.max(limits.minHeight, Math.min(height, limits.maxHeight));
@@ -579,9 +587,9 @@ class GridPanel extends Panel {
     // Finally, layout the children.
     let maxRow = rowSizers.length - 1;
     let maxCol = colSizers.length - 1;
-    for (let i = 0, n = this.childCount; i < n; ++i) {
+    for (let i = 0, n = children.length; i < n; ++i) {
       // Fetch the child widget.
-      let widget = this.childAt(i);
+      let widget = children.get(i);
 
       // Compute the widget top and height.
       let r1 = Math.max(0, Math.min(GridPanel.getRow(widget), maxRow));
@@ -604,23 +612,51 @@ class GridPanel extends Panel {
   }
 
   /**
-   * The change handler for the row and columns specs properties.
+   * The change handler for the `rowSpecs` property.
    */
-  private _onGridSpecsChanged(old: Spec[], value: Spec[]): void {
+  private _onRowSpecsChanged(old: Spec[], specs: Spec[]): void {
     for (let i = 0, n = old.length; i < n; ++i) {
-      Property.getChanged(old[i]).disconnect(this._onSpecChanged, this);
+      if (specs.indexOf(old[i]) === -1) {
+        old[i].changed.disconnect(this._onRowSpecChanged, this);
+      }
     }
-    for (let i = 0, n = value.length; i < n; ++i) {
-      Property.getChanged(value[i]).connect(this._onSpecChanged, this);
+    for (let i = 0, n = specs.length; i < n; ++i) {
+      if (old.indexOf(specs[i]) === -1) {
+        specs[i].changed.connect(this._onRowSpecChanged, this);
+      }
     }
-    postMessage(this, Widget.MsgLayoutRequest);
+    postMessage(this, Panel.MsgLayoutRequest);
   }
 
   /**
-   * The change handler for a spec property changed signal.
+   * The change handler for the `columnSpecs` property.
    */
-  private _onSpecChanged(spec: Spec, args: IPropertyChangedArgs<Spec, any>): void {
-    postMessage(this, Widget.MsgLayoutRequest);
+  private _onColSpecsChanged(old: Spec[], specs: Spec[]): void {
+    for (let i = 0, n = old.length; i < n; ++i) {
+      if (specs.indexOf(old[i]) === -1) {
+        old[i].changed.disconnect(this._onColSpecChanged, this);
+      }
+    }
+    for (let i = 0, n = specs.length; i < n; ++i) {
+      if (old.indexOf(specs[i]) === -1) {
+        specs[i].changed.connect(this._onColSpecChanged, this);
+      }
+    }
+    postMessage(this, Panel.MsgLayoutRequest);
+  }
+
+  /**
+   * The change handler for a row spec `changed` signal.
+   */
+  private _onRowSpecChanged(sender: Spec, args: IChangedArgs<any>): void {
+    postMessage(this, Panel.MsgLayoutRequest);
+  }
+
+  /**
+   * The change handler for a column spec `changed` signal.
+   */
+  private _onColSpecChanged(sender: Spec, args: IChangedArgs<any>): void {
+    postMessage(this, Panel.MsgLayoutRequest);
   }
 
   private _box: IBoxSizing = null;
@@ -664,6 +700,13 @@ interface ISpecOptions {
 export
 class Spec {
   /**
+   * A signal emitted when the spec state changes.
+   *
+   * **See also:** [[changed]]
+   */
+  static changedSignal = new Signal<Spec, IChangedArgs<any>>();
+
+  /**
    * The property descriptor for the size basis.
    *
    * This controls the size allocated to the row or column before the
@@ -676,7 +719,9 @@ class Spec {
    * **See also:** [[sizeBasis]]
    */
   static sizeBasisProperty = new Property<Spec, number>({
+    name: 'sizeBasis',
     value: 0,
+    notify: Spec.changedSignal,
   });
 
   /**
@@ -694,8 +739,10 @@ class Spec {
    * **See also:** [[minSize]]
    */
   static minSizeProperty = new Property<Spec, number>({
+    name: 'minSize',
     value: 0,
     coerce: (owner, value) => Math.max(0, value),
+    notify: Spec.changedSignal,
   });
 
   /**
@@ -713,8 +760,10 @@ class Spec {
    * **See also:** [[maxSize]]
    */
   static maxSizeProperty = new Property<Spec, number>({
+    name: 'maxSize',
     value: Infinity,
     coerce: (owner, value) => Math.max(0, value),
+    notify: Spec.changedSignal,
   });
 
   /**
@@ -731,8 +780,10 @@ class Spec {
    * **See also:** [[stretch]]
    */
   static stretchProperty = new Property<Spec, number>({
+    name: 'stretch',
     value: 1,
     coerce: (owner, value) => Math.max(0, value | 0),
+    notify: Spec.changedSignal,
   });
 
   /**
@@ -753,6 +804,16 @@ class Spec {
     if (options.stretch !== void 0) {
       this.stretch = options.stretch;
     }
+  }
+
+  /**
+   * A signal emitted when the spec state changes.
+   *
+   * #### Notes
+   * This is a pure delegate to the [[changedSignal]].
+   */
+  get changed(): ISignal<Spec, IChangedArgs<any>> {
+    return Spec.changedSignal.bind(this);
   }
 
   /**
@@ -836,6 +897,7 @@ class Spec {
   }
 }
 
+
 /**
  * An object which represents an offset rect.
  */
@@ -865,7 +927,8 @@ interface IRect {
 /**
  * A private attached property which stores a widget offset rect.
  */
-let rectProperty = new Property<Widget, IRect>({
+const rectProperty = new Property<Widget, IRect>({
+  name: 'rect',
   create: createRect,
 });
 
@@ -873,8 +936,8 @@ let rectProperty = new Property<Widget, IRect>({
 /**
  * A private attached property which stores a widget's size limits.
  */
-let limitsProperty = new Property<Widget, ISizeLimits>({
-  silent: true,
+const limitsProperty = new Property<Widget, ISizeLimits>({
+  name: 'limits',
   create: owner => sizeLimits(owner.node),
 });
 
@@ -962,11 +1025,11 @@ function resetGeometry(widget: Widget): void {
 
 
 /**
- * The changed handler for the attached widget properties.
+ * The change handler for the attached child properties.
  */
-function onWidgetChanged(owner: Widget): void {
-  if (owner.parent instanceof GridPanel) {
-    owner.parent.update();
+function onChildPropertyChanged(child: Widget): void {
+  if (child.parent instanceof GridPanel) {
+    postMessage(child.parent, Widget.MsgUpdateRequest);
   }
 }
 
