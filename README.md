@@ -108,3 +108,54 @@ Usage Examples
 
 **Note:** This module is fully compatible with Node/Babel/ES6/ES5. Simply
 omit the type declarations when using a language other than TypeScript.
+
+```typescript
+import {
+  GridPanel, Spec
+} from 'phosphor-gridpanel';
+
+import {
+  Widget
+} from 'phosphor-widget';
+
+
+// Create some content for the panel.
+let w1 = new Widget();
+let w2 = new Widget();
+let w3 = new Widget();
+
+// Create the row and column specs for panel.
+let rowSpecs = [
+  new Spec({ minSize: 150, sizeBasis: 300, stretch: 2 }),
+  new Spec({ minSize: 50, sizeBasis: 150, stretch: 1 })
+];
+
+let colSpecs = [
+  new Spec({ minSize: 200 }),
+  new Spec({ minSize: 300 }),
+];
+
+// Set the content cell indices and spans.
+GridPanel.setRow(w1, 0);
+GridPanel.setColumn(w1, 0);
+GridPanel.setRowSpan(w1, 1);
+GridPanel.setColumnSpan(w1, 1);
+
+GridPanel.setRow(w2, 1);
+GridPanel.setColumn(w2, 0);
+GridPanel.setRowSpan(w2, 1);
+GridPanel.setColumnSpan(w2, 1);
+
+GridPanel.setRow(w3, 0);
+GridPanel.setColumn(w3, 1);
+GridPanel.setRowSpan(w3, 2);
+GridPanel.setColumnSpan(w3, 1);
+
+// Setup the grid panel.
+let panel = new GridPanel();
+panel.rowSpacing = 3;
+panel.columnSpacing = 3;
+panel.rowSpecs = rowSpecs;
+panel.columnSpecs = colSpecs;
+panel.children.assign([w1, w2, w3]);
+```
