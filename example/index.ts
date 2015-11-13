@@ -20,7 +20,6 @@ import './index.css';
 
 function createContent(name: string): Widget {
   let widget = new Widget();
-  widget.addClass('content');
   widget.addClass(name);
   return widget;
 }
@@ -81,7 +80,7 @@ function main(): void {
     new Spec({ minSize: 50 })
   ];
 
-  panel.children = [r1, g1, b1, y1, r2, g2, b2, y2];
+  panel.children.assign([r1, g1, b1, y1, r2, g2, b2, y2]);
 
   Widget.attach(panel, document.body);
 
