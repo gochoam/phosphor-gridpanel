@@ -14,11 +14,15 @@ import {
 } from 'phosphor-messaging';
 
 import {
-  Property
+  IChangedArgs, Property
 } from 'phosphor-properties';
 
 import {
-  ResizeMessage, Widget
+  Signal
+} from 'phosphor-signaling';
+
+import {
+  Panel, ResizeMessage, Widget
 } from 'phosphor-widget';
 
 import {
@@ -48,6 +52,14 @@ class LogWidget extends Widget {
 }
 
 
+function expectArraysEqv<T>(a: T[], b: T[]): void {
+  expect(a.length).to.be(b.length);
+  for (let i = 0, n = a.length; i < n; ++i) {
+    expect(a[i]).to.be(b[i]);
+  }
+}
+
+
 describe('phosphor-gridpanel', () => {
 
   describe('GridPanel', () => {
@@ -58,10 +70,14 @@ describe('phosphor-gridpanel', () => {
         expect(GridPanel.rowSpecsProperty instanceof Property).to.be(true);
       });
 
+      it('should have the name `rowSpecs`', () => {
+        expect(GridPanel.rowSpecsProperty.name).to.be('rowSpecs');
+      });
+
       it('should default to a frozen empty array', () => {
         let panel = new GridPanel();
         let specs = GridPanel.rowSpecsProperty.get(panel);
-        expect(specs).to.eql([]);
+        expectArraysEqv(specs, []);
         expect(() => specs.push(new Spec())).to.throwError();
       });
 
@@ -70,7 +86,7 @@ describe('phosphor-gridpanel', () => {
         let specs1 = [new Spec()];
         GridPanel.rowSpecsProperty.set(panel, specs1);
         let specs2 = GridPanel.rowSpecsProperty.get(panel);
-        expect(specs1).to.eql(specs2);
+        expectArraysEqv(specs1, specs2);
         expect(specs1).to.not.be(specs2);
         expect(() => specs1.push(new Spec())).to.not.throwError();
         expect(() => specs2.push(new Spec())).to.throwError();
@@ -96,10 +112,14 @@ describe('phosphor-gridpanel', () => {
         expect(GridPanel.columnSpecsProperty instanceof Property).to.be(true);
       });
 
+      it('should have the name `columnSpecs`', () => {
+        expect(GridPanel.columnSpecsProperty.name).to.be('columnSpecs');
+      });
+
       it('should default to a frozen empty array', () => {
         let panel = new GridPanel();
         let specs = GridPanel.columnSpecsProperty.get(panel);
-        expect(specs).to.eql([]);
+        expectArraysEqv(specs, []);
         expect(() => specs.push(new Spec())).to.throwError();
       });
 
@@ -108,7 +128,7 @@ describe('phosphor-gridpanel', () => {
         let specs1 = [new Spec()];
         GridPanel.columnSpecsProperty.set(panel, specs1);
         let specs2 = GridPanel.columnSpecsProperty.get(panel);
-        expect(specs1).to.eql(specs2);
+        expectArraysEqv(specs1, specs2);
         expect(specs1).to.not.be(specs2);
         expect(() => specs1.push(new Spec())).to.not.throwError();
         expect(() => specs2.push(new Spec())).to.throwError();
@@ -132,6 +152,10 @@ describe('phosphor-gridpanel', () => {
 
       it('should be a property descriptor', () => {
         expect(GridPanel.rowSpacingProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `rowSpacing`', () => {
+        expect(GridPanel.rowSpacingProperty.name).to.be('rowSpacing');
       });
 
       it('should default to `8`', () => {
@@ -171,6 +195,10 @@ describe('phosphor-gridpanel', () => {
         expect(GridPanel.columnSpacingProperty instanceof Property).to.be(true);
       });
 
+      it('should have the name `columnSpacing`', () => {
+        expect(GridPanel.columnSpacingProperty.name).to.be('columnSpacing');
+      });
+
       it('should default to `8`', () => {
         let panel = new GridPanel();
         expect(GridPanel.columnSpacingProperty.get(panel)).to.be(8);
@@ -208,6 +236,10 @@ describe('phosphor-gridpanel', () => {
         expect(GridPanel.rowProperty instanceof Property).to.be(true);
       });
 
+      it('should have the name `row`', () => {
+        expect(GridPanel.rowProperty.name).to.be('row');
+      });
+
       it('should default to `0`', () => {
         let widget = new Widget();
         expect(GridPanel.rowProperty.get(widget)).to.be(0);
@@ -229,7 +261,7 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let child0 = new Widget();
         let child1 = new Widget();
-        panel.children = [child0, child1];
+        panel.children.assign([child0, child1]);
         Widget.attach(panel, document.body);
         clearMessageData(panel);
         GridPanel.rowProperty.set(child0, 1);
@@ -246,6 +278,10 @@ describe('phosphor-gridpanel', () => {
 
       it('should be a property descriptor', () => {
         expect(GridPanel.columnProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `column`', () => {
+        expect(GridPanel.columnProperty.name).to.be('column');
       });
 
       it('should default to `0`', () => {
@@ -269,7 +305,7 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let child0 = new Widget();
         let child1 = new Widget();
-        panel.children = [child0, child1];
+        panel.children.assign([child0, child1]);
         Widget.attach(panel, document.body);
         clearMessageData(panel);
         GridPanel.columnProperty.set(child0, 1);
@@ -286,6 +322,10 @@ describe('phosphor-gridpanel', () => {
 
       it('should be a property descriptor', () => {
         expect(GridPanel.rowSpanProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `rowSpan`', () => {
+        expect(GridPanel.rowSpanProperty.name).to.be('rowSpan');
       });
 
       it('should default to `1`', () => {
@@ -309,7 +349,7 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let child0 = new Widget();
         let child1 = new Widget();
-        panel.children = [child0, child1];
+        panel.children.assign([child0, child1]);
         Widget.attach(panel, document.body);
         clearMessageData(panel);
         GridPanel.rowSpanProperty.set(child0, 2);
@@ -326,6 +366,10 @@ describe('phosphor-gridpanel', () => {
 
       it('should be a property descriptor', () => {
         expect(GridPanel.columnSpanProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `columnSpan`', () => {
+        expect(GridPanel.columnSpanProperty.name).to.be('columnSpan');
       });
 
       it('should default to `1`', () => {
@@ -349,7 +393,7 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let child0 = new Widget();
         let child1 = new Widget();
-        panel.children = [child0, child1];
+        panel.children.assign([child0, child1]);
         Widget.attach(panel, document.body);
         clearMessageData(panel);
         GridPanel.columnSpanProperty.set(child0, 2);
@@ -504,7 +548,7 @@ describe('phosphor-gridpanel', () => {
 
       it('should dispose of the resources held by the panel', () => {
         let panel = new GridPanel();
-        panel.children = [new Widget(), new Widget()];
+        panel.children.assign([new Widget(), new Widget()]);
         panel.dispose();
         expect(panel.isDisposed).to.be(true);
         expect(panel.children.length).to.be(0);
@@ -516,7 +560,7 @@ describe('phosphor-gridpanel', () => {
 
       it('should get the row specs for the grid panel', () => {
         let panel = new GridPanel();
-        expect(panel.rowSpecs).to.eql([]);
+        expectArraysEqv(panel.rowSpecs, []);
       });
 
       it('should set the row specs for the grid panel', () => {
@@ -541,7 +585,7 @@ describe('phosphor-gridpanel', () => {
 
       it('should get the column specs for the grid panel', () => {
         let panel = new GridPanel();
-        expect(panel.columnSpecs).to.eql([]);
+        expectArraysEqv(panel.columnSpecs, []);
       });
 
       it('should set the column specs for the grid panel', () => {
@@ -617,7 +661,7 @@ describe('phosphor-gridpanel', () => {
         let widget = new Widget();
         Widget.attach(panel, document.body);
         expect(panel.messages.indexOf('child-added')).to.be(-1);
-        panel.children = [widget];
+        panel.children.add(widget);
         expect(panel.messages.indexOf('child-added')).to.not.be(-1);
       });
 
@@ -626,7 +670,7 @@ describe('phosphor-gridpanel', () => {
         let widget = new LogWidget();
         Widget.attach(panel, document.body);
         expect(widget.messages.indexOf('after-attach')).to.be(-1);
-        panel.children = [widget];
+        panel.children.add(widget);
         expect(widget.messages.indexOf('after-attach')).to.not.be(-1);
       });
 
@@ -635,7 +679,7 @@ describe('phosphor-gridpanel', () => {
         let widget = new Widget();
         Widget.attach(panel, document.body);
         clearMessageData(panel);
-        panel.children = [widget];
+        panel.children.add(widget);
         expect(panel.messages.indexOf('update-request')).to.be(-1);
         requestAnimationFrame(() => {
           expect(panel.messages.indexOf('update-request')).to.not.be(-1);
@@ -650,10 +694,10 @@ describe('phosphor-gridpanel', () => {
       it('should be invoked when a child is removed', () => {
         let panel = new LogPanel();
         let widget = new Widget();
-        panel.children = [widget];
+        panel.children.add(widget);
         Widget.attach(panel, document.body);
         expect(panel.messages.indexOf('child-removed')).to.be(-1);
-        panel.children = [];
+        panel.children.remove(widget);
         expect(panel.messages.indexOf('child-removed')).to.not.be(-1);
       });
 
@@ -661,9 +705,9 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let widget = new LogWidget();
         Widget.attach(panel, document.body);
-        panel.children = [widget];
+        panel.children.add(widget);
         expect(widget.messages.indexOf('before-detach')).to.be(-1);
-        panel.children = [];
+        panel.children.remove(widget);
         expect(widget.messages.indexOf('before-detach')).to.not.be(-1);
       });
 
@@ -718,7 +762,7 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let widget = new Widget();
         widget.hidden = true;
-        panel.children = [widget];
+        panel.children.add(widget);
         Widget.attach(panel, document.body);
         expect(panel.messages.indexOf('child-shown')).to.be(-1);
         widget.hidden = false;
@@ -729,7 +773,7 @@ describe('phosphor-gridpanel', () => {
         let panel = new LogPanel();
         let widget = new Widget();
         widget.hidden = true;
-        panel.children = [widget];
+        panel.children.add(widget);
         Widget.attach(panel, document.body);
         clearMessageData(panel);
         widget.hidden = false;
@@ -755,7 +799,7 @@ describe('phosphor-gridpanel', () => {
       it('should handle an unknown size', () => {
         let panel = new LogPanel();
         let widget = new Widget();
-        panel.children = [widget];
+        panel.children.add(widget);
         Widget.attach(panel, document.body);
         expect(panel.messages.indexOf('resize')).to.be(-1);
         sendMessage(panel, ResizeMessage.UnknownSize);
@@ -768,14 +812,14 @@ describe('phosphor-gridpanel', () => {
         let child1 = new Widget();
         panel.rowSpecs = [new Spec()];
         panel.columnSpecs = [new Spec()];
-        panel.children = [child0, child1];
+        panel.children.assign([child0, child1]);
         Widget.attach(panel, document.body);
         panel.node.style.position = 'absolute';
         panel.node.style.top = '0px';
         panel.node.style.left = '0px';
         panel.node.style.width = '0px';
         panel.node.style.height = '0px';
-        sendMessage(panel, Widget.MsgLayoutRequest);
+        sendMessage(panel, Panel.MsgLayoutRequest);
         panel.node.style.width = '100px';
         panel.node.style.height = '100px';
         sendMessage(panel, new ResizeMessage(100, 100));
@@ -795,7 +839,7 @@ describe('phosphor-gridpanel', () => {
 
       it('should be invoked on an `update-request` message', () => {
         let panel = new LogPanel();
-        panel.update(true);
+        sendMessage(panel, Widget.MsgUpdateRequest);
         expect(panel.messages.indexOf('update-request')).to.not.be(-1);
       });
 
@@ -805,17 +849,17 @@ describe('phosphor-gridpanel', () => {
         let child1 = new Widget();
         panel.rowSpecs = [new Spec()];
         panel.columnSpecs = [new Spec()];
-        panel.children = [child0, child1];
+        panel.children.assign([child0, child1]);
         Widget.attach(panel, document.body);
         panel.node.style.position = 'absolute';
         panel.node.style.top = '0px';
         panel.node.style.left = '0px';
         panel.node.style.width = '0px';
         panel.node.style.height = '0px';
-        sendMessage(panel, Widget.MsgLayoutRequest);
+        sendMessage(panel, Panel.MsgLayoutRequest);
         panel.node.style.width = '200px';
         panel.node.style.height = '200px';
-        panel.update(true);
+        sendMessage(panel, Widget.MsgUpdateRequest);
         expect(child0.node.offsetTop).to.be(0);
         expect(child0.node.offsetLeft).to.be(0);
         expect(child0.node.offsetWidth).to.be(200);
@@ -832,7 +876,7 @@ describe('phosphor-gridpanel', () => {
 
       it('should be invoked on a `layout-request` message', () => {
         let panel = new LogPanel();
-        sendMessage(panel, Widget.MsgLayoutRequest);
+        sendMessage(panel, Panel.MsgLayoutRequest);
         expect(panel.messages.indexOf('layout-request')).to.not.be(-1);
       });
 
@@ -844,7 +888,7 @@ describe('phosphor-gridpanel', () => {
         clearMessageData(panel1);
         clearMessageData(panel2);
         expect(panel1.messages.indexOf('layout-request')).to.be(-1);
-        sendMessage(panel2, Widget.MsgLayoutRequest);
+        sendMessage(panel2, Panel.MsgLayoutRequest);
         expect(panel1.messages.indexOf('layout-request')).to.not.be(-1);
       });
 
@@ -855,7 +899,7 @@ describe('phosphor-gridpanel', () => {
         Widget.attach(panel, document.body);
         expect(panel.node.style.minWidth).to.be('');
         expect(panel.node.style.minHeight).to.be('');
-        sendMessage(panel, Widget.MsgLayoutRequest);
+        sendMessage(panel, Panel.MsgLayoutRequest);
         expect(panel.node.style.minWidth).to.be('50px');
         expect(panel.node.style.minHeight).to.be('50px');
       });
@@ -955,7 +999,7 @@ describe('phosphor-gridpanel', () => {
           new Spec({ minSize: 50 })
         ];
 
-        panel.children = [r1, g1, b1, y1, r2, g2, b2, y2];
+        panel.children.assign([r1, g1, b1, y1, r2, g2, b2, y2]);
         panel.node.style.position = 'absolue';
         panel.node.style.position = 'absolute';
         panel.node.style.top = '0px';
@@ -964,7 +1008,7 @@ describe('phosphor-gridpanel', () => {
         panel.node.style.height = '0px';
 
         Widget.attach(panel, document.body);
-        sendMessage(panel, Widget.MsgLayoutRequest);
+        sendMessage(panel, Panel.MsgLayoutRequest);
 
         panel.node.style.width = '500px';
         panel.node.style.height = '500px';
@@ -1017,10 +1061,26 @@ describe('phosphor-gridpanel', () => {
 
   describe('Spec', () => {
 
+    describe('.changedSignal', () => {
+
+      it('should be a signal instance', () => {
+        expect(Spec.changedSignal instanceof Signal).to.be(true);
+      });
+
+    });
+
     describe('.sizeBasisProperty', () => {
 
       it('should be a property descriptor', () => {
         expect(Spec.sizeBasisProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `sizeBasis`', () => {
+        expect(Spec.sizeBasisProperty.name).to.be('sizeBasis');
+      });
+
+      it('should notify using the `changedSignal`', () => {
+        expect(Spec.sizeBasisProperty.notify).to.be(Spec.changedSignal);
       });
 
       it('should default to `0`', () => {
@@ -1034,6 +1094,14 @@ describe('phosphor-gridpanel', () => {
 
       it('should be a property descriptor', () => {
         expect(Spec.minSizeProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `minSize`', () => {
+        expect(Spec.minSizeProperty.name).to.be('minSize');
+      });
+
+      it('should notify using the `changedSignal`', () => {
+        expect(Spec.minSizeProperty.notify).to.be(Spec.changedSignal);
       });
 
       it('should default to `0`', () => {
@@ -1054,6 +1122,14 @@ describe('phosphor-gridpanel', () => {
         expect(Spec.maxSizeProperty instanceof Property).to.be(true);
       });
 
+      it('should have the name `maxSize`', () => {
+        expect(Spec.maxSizeProperty.name).to.be('maxSize');
+      });
+
+      it('should notify using the `changedSignal`', () => {
+        expect(Spec.maxSizeProperty.notify).to.be(Spec.changedSignal);
+      });
+
       it('should default to `Infinity`', () => {
         let spec = new Spec({});
         expect(Spec.maxSizeProperty.get(spec)).to.be(Infinity);
@@ -1070,6 +1146,14 @@ describe('phosphor-gridpanel', () => {
 
       it('should be a property descriptor', () => {
         expect(Spec.stretchProperty instanceof Property).to.be(true);
+      });
+
+      it('should have the name `stretch`', () => {
+        expect(Spec.stretchProperty.name).to.be('stretch');
+      });
+
+      it('should notify using the `changedSignal`', () => {
+        expect(Spec.stretchProperty.notify).to.be(Spec.changedSignal);
       });
 
       it('should default to `1`', () => {
@@ -1103,6 +1187,15 @@ describe('phosphor-gridpanel', () => {
 
     });
 
+    describe('#changed', () => {
+
+      it('should be a pure delegate to the `changedSignal`', () => {
+        let spec = new Spec();
+        expect(spec.changed).to.eql(Spec.changedSignal.bind(spec));
+      });
+
+    });
+
     describe('#sizeBasis', () => {
 
       it('should get the size basis for the spec', () => {
@@ -1123,6 +1216,18 @@ describe('phosphor-gridpanel', () => {
         spec.sizeBasis = 5;
         let sizeBasis = Spec.sizeBasisProperty.get(spec);
         expect(sizeBasis).to.be(5);
+      });
+
+      it('should emit the changed signal', () => {
+        let spec = new Spec();
+        let args: IChangedArgs<any> = null;
+        spec.changed.connect((s, a) => { args = a; });
+        spec.sizeBasis = 42;
+        expect(args).to.eql({
+          name: 'sizeBasis',
+          oldValue: 0,
+          newValue: 42,
+        });
       });
 
     });
@@ -1149,6 +1254,18 @@ describe('phosphor-gridpanel', () => {
         expect(minSize).to.be(5);
       });
 
+      it('should emit the changed signal', () => {
+        let spec = new Spec();
+        let args: IChangedArgs<any> = null;
+        spec.changed.connect((s, a) => { args = a; });
+        spec.minSize = 7;
+        expect(args).to.eql({
+          name: 'minSize',
+          oldValue: 0,
+          newValue: 7,
+        });
+      });
+
     });
 
     describe('#maxSize', () => {
@@ -1173,6 +1290,18 @@ describe('phosphor-gridpanel', () => {
         expect(maxSize).to.be(5);
       });
 
+      it('should emit the changed signal', () => {
+        let spec = new Spec();
+        let args: IChangedArgs<any> = null;
+        spec.changed.connect((s, a) => { args = a; });
+        spec.maxSize = 63;
+        expect(args).to.eql({
+          name: 'maxSize',
+          oldValue: Infinity,
+          newValue: 63,
+        });
+      });
+
     });
 
     describe('#stretch', () => {
@@ -1195,6 +1324,18 @@ describe('phosphor-gridpanel', () => {
         spec.stretch = 5;
         let stretch = Spec.stretchProperty.get(spec);
         expect(stretch).to.be(5);
+      });
+
+      it('should emit the changed signal', () => {
+        let spec = new Spec();
+        let args: IChangedArgs<any> = null;
+        spec.changed.connect((s, a) => { args = a; });
+        spec.stretch = 17;
+        expect(args).to.eql({
+          name: 'stretch',
+          oldValue: 1,
+          newValue: 17,
+        });
       });
 
     });
