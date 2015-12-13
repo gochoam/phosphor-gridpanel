@@ -80,9 +80,16 @@ function main(): void {
     new Spec({ minSize: 50 })
   ];
 
-  panel.children.assign([r1, g1, b1, y1, r2, g2, b2, y2]);
+  panel.addChild(r1);
+  panel.addChild(g1);
+  panel.addChild(b1);
+  panel.addChild(y1);
+  panel.addChild(r2);
+  panel.addChild(g2);
+  panel.addChild(b2);
+  panel.addChild(y2);
 
-  Widget.attach(panel, document.body);
+  panel.attach(document.body);
 
   window.onresize = () => panel.update();
 }
