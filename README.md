@@ -157,5 +157,7 @@ panel.rowSpacing = 3;
 panel.columnSpacing = 3;
 panel.rowSpecs = rowSpecs;
 panel.columnSpecs = colSpecs;
-panel.children.assign([w1, w2, w3]);
+panel.addChild(w1);
+panel.addChild(w2);
+panel.addChild(w3);
 ```
