@@ -1,6 +1,6 @@
 {
   "name": "phosphor-gridpanel",
-  "version": "1.0.0-beta.0",
+  "version": "1.0.0-beta.1",
   "description": "A Phosphor layout panel which arranges its children into a 2D grid.",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
