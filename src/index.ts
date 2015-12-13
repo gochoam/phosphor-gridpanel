@@ -28,7 +28,7 @@ import {
 } from 'phosphor-signaling';
 
 import {
-  ChildMessage, Panel, ResizeMessage, Widget
+  ChildIndexMessage, ChildMessage, Panel, ResizeMessage, Widget
 } from 'phosphor-widget';
 
 import './index.css';
@@ -399,7 +399,7 @@ class GridPanel extends Panel {
   /**
    * A message handler invoked on a `'child-added'` message.
    */
-  protected onChildAdded(msg: ChildMessage): void {
+  protected onChildAdded(msg: ChildIndexMessage): void {
     this.node.appendChild(msg.child.node);
     if (this.isAttached) sendMessage(msg.child, Widget.MsgAfterAttach);
     postMessage(this, Widget.MsgUpdateRequest);
@@ -408,12 +408,12 @@ class GridPanel extends Panel {
   /**
    * A message handler invoked on a `'child-moved'` message.
    */
-  protected onChildMoved(msg: ChildMessage): void { /* no-op */ }
+  protected onChildMoved(msg: ChildIndexMessage): void { /* no-op */ }
 
   /**
    * A message handler invoked on a `'child-removed'` message.
    */
-  protected onChildRemoved(msg: ChildMessage): void {
+  protected onChildRemoved(msg: ChildIndexMessage): void {
     if (this.isAttached) sendMessage(msg.child, Widget.MsgBeforeDetach);
     this.node.removeChild(msg.child.node);
     resetGeometry(msg.child);
@@ -498,9 +498,8 @@ class GridPanel extends Panel {
     }
 
     // Refresh the cached size limits for the children.
-    let children = this.children;
-    for (let i = 0, n = children.length; i < n; ++i) {
-      let widget = children.get(i);
+    for (let i = 0, n = this.childCount(); i < n; ++i) {
+      let widget = this.childAt(i);
       setLimits(widget, sizeLimits(widget.node));
     }
 
@@ -536,8 +535,7 @@ class GridPanel extends Panel {
    */
   private _layoutChildren(offsetWidth: number, offsetHeight: number): void {
     // Bail early if their are no children to arrange.
-    let children = this.children;
-    if (children.length === 0) {
+    if (this.childCount() === 0) {
       return;
     }
 
@@ -552,8 +550,8 @@ class GridPanel extends Panel {
 
     // If there are no row or column sizers, just stack the children.
     if (this._rowSizers.length === 0 || this._colSizers.length === 0) {
-      for (let i = 0, n = children.length; i < n; ++i) {
-        let widget = children.get(i);
+      for (let i = 0, n = this.childCount(); i < n; ++i) {
+        let widget = this.childAt(i);
         let limits = getLimits(widget);
         let w = Math.max(limits.minWidth, Math.min(width, limits.maxWidth));
         let h = Math.max(limits.minHeight, Math.min(height, limits.maxHeight));
@@ -587,9 +585,9 @@ class GridPanel extends Panel {
     // Finally, layout the children.
     let maxRow = rowSizers.length - 1;
     let maxCol = colSizers.length - 1;
-    for (let i = 0, n = children.length; i < n; ++i) {
+    for (let i = 0, n = this.childCount(); i < n; ++i) {
       // Fetch the child widget.
-      let widget = children.get(i);
+      let widget = this.childAt(i);
 
       // Compute the widget top and height.
       let r1 = Math.max(0, Math.min(GridPanel.getRow(widget), maxRow));
